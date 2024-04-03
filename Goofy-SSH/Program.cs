@@ -13,8 +13,12 @@ public class Program
         Console.Write("Hostname: ");
         string hostname = Console.ReadLine();
         if (hostname == "")
-            hostname = "localhost:443";
-        hostname = "ws://" + hostname;
+            hostname = "ssh.marceldobehere.com";
+
+        if (hostname.EndsWith(":443"))
+            hostname = "wss://" + hostname;
+        else
+            hostname = "ws://" + hostname;
 
         Console.Write("Proxy only? (y/n): ");
         string proxyOnlyStr = Console.ReadLine();
@@ -90,8 +94,10 @@ public class Program
     {
         Console.WriteLine("> Starting WS Client.");
         clientWebSocket = new ClientWebSocket();
-        await clientWebSocket.ConnectAsync(new Uri(hostname), CancellationToken.None);
-        Console.WriteLine("> Connected to Websocket server");
+        using SocketsHttpHandler handler = new();
+        await clientWebSocket.ConnectAsync(new Uri(hostname), new HttpMessageInvoker(handler), CancellationToken.None);
+        Console.WriteLine("> Connected to Websocket server: " + clientWebSocket.State);
+        
     }
 
     public static async Task RunClient()
@@ -132,7 +138,6 @@ public class Program
         Console.WriteLine("> Running TCP Server.");
 
         TcpClient tcpClient = await tcpListener.AcceptTcpClientAsync();
-        //Console.WriteLine("> TCP Client connected");
 
         networkStream = tcpClient.GetStream();
         try
@@ -176,7 +181,6 @@ public class Program
 
     public static void RunSSH(string username)
     {
-        //while (true) ;
         Console.WriteLine("> Starting SSH Client.");
 
         // Start SSH client
