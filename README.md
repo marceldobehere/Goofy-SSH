@@ -35,4 +35,7 @@ This means that by default it is running with normal websockets.
 It might be fine if the secure websocket server is running in like C# but I have not been able to test it much.
 
 ## Images
+![Startup Prompt](./images/login.PNG)
+![Successfull connection](./images/logged%20in.PNG)
+![Proxy only mode](./images/proxy%20mode.PNG)
 
