@@ -8,7 +8,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        Console.Title = "Goofy SSH";
+        Console.Title = "Goofy Websocket SSH";
 
         Console.Write("Hostname: ");
         string hostname = Console.ReadLine();
@@ -38,15 +38,50 @@ public class Program
 
         try
         {
-            StartLocalTcpServer().Wait();
-            StartWebsocketClient(hostname).Wait();
-            RunServer();
-            RunClient();
             if (!proxyOnly)
+            {
+                StartLocalTcpServer().Wait();
+                StartWebsocketClient(hostname).Wait();
+                RunServer();
+                RunClient();
                 RunSSH(username);
+            }
             else
-                while (!shouldExit)
-                    Thread.Sleep(100);
+            {
+                while (true)
+                {
+                    shouldExit = false;
+                    StartLocalTcpServer().Wait();
+                    StartWebsocketClient(hostname).Wait();
+                    Task t1 = RunServer();
+                    Task t2 = RunClient();
+                    Console.WriteLine($"\n> You can now ssh into localhost on port {tcpPort}");
+                    while (!shouldExit)
+                        Thread.Sleep(100);
+                    try
+                    {
+                        CloseServerAndClient().Wait();
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("\n> Exception on close: " + e.Message);
+                    }
+
+                    try
+                    {
+                        t1.Wait();
+                        t2.Wait();
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("\n> Exception on wait: " + e.Message);
+                    }
+
+                    Thread.Sleep(500);
+                    networkStream = null;
+                }
+            }
+
         }
         catch (Exception e)
         {
@@ -73,9 +108,9 @@ public class Program
         Console.WriteLine("> Starting TCP Server.");
         for (int i = 0; i < 10; i++)
         {
+            tcpPort = 6020;
             try
             {
-                tcpPort = rnd.Next(6000, 7000);
                 tcpListener = new TcpListener(IPAddress.Loopback, tcpPort);
                 tcpListener.Start();
                 Console.WriteLine($"> TCP Server listening on port {tcpPort}");
@@ -84,6 +119,7 @@ public class Program
             catch (Exception e)
             {
                 Console.WriteLine("> TCP Server Exception: " + e.Message);
+                tcpPort = rnd.Next(6000, 7000);
                 continue;
             }
         }
